@@ -11,7 +11,7 @@ import java.net.http.HttpResponse;
 
 public class Main {
 
-    final private static Flag[] FLAGS = new Flag[] {
+    final private static Flag[] VALID_FLAGS = new Flag[] {
             new Flag("help", "h", "Show this help message"),
             new Flag("verbose", "v", "Enable verbose output"),
     };
