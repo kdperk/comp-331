@@ -10,6 +10,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class Main {
+
+    final private static Flag[] FLAGS = new Flag[] {
+            new Flag("help", "h", "Show this help message"),
+            new Flag("verbose", "v", "Enable verbose output"),
+    };
+
     public static void main(String[] args) throws Exception {
         System.out.println("Working directory: " + System.getProperty("user.dir"));
 
