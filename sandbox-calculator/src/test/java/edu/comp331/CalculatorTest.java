@@ -6,19 +6,16 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CalculatorTest
-{
+public class CalculatorTest {
     private Calculator calculator;
 
     @Before
-    public void setUp()
-    {
+    public void setUp() {
         calculator = new Calculator();
     }
 
     @Test
-    public void normalOperations()
-    {
+    public void normalOperations() {
         assertEquals(7.0, calculator.add(3.0, 4.0), 0.0);
         assertEquals(1.0, calculator.subtract(4.0, 3.0), 0.0);
         assertEquals(12.0, calculator.multiply(3.0, 4.0), 0.0);
@@ -30,8 +27,7 @@ public class CalculatorTest
     }
 
     @Test
-    public void negativeAndFractionalValues()
-    {
+    public void negativeAndFractionalValues() {
         assertEquals(-7.5, calculator.add(-3.0, -4.5), 0.0);
         assertEquals(0.25, calculator.divide(0.5, 2.0), 0.0);
         assertEquals(0.25, calculator.mod(1.25, 1.0), 0.0);
@@ -39,20 +35,17 @@ public class CalculatorTest
     }
 
     @Test(expected = ArithmeticException.class)
-    public void divideByZeroThrowsException()
-    {
+    public void divideByZeroThrowsException() {
         calculator.divide(10.0, 0.0);
     }
 
     @Test(expected = ArithmeticException.class)
-    public void moduloByZeroThrowsException()
-    {
+    public void moduloByZeroThrowsException() {
         calculator.mod(10.0, 0.0);
     }
 
     @Test
-    public void specialDoubleValues()
-    {
+    public void specialDoubleValues() {
         assertTrue(Double.isNaN(calculator.add(Double.NaN, 1.0)));
         assertTrue(Double.isNaN(calculator.pow(-1.0, 0.5)));
         assertEquals(Double.POSITIVE_INFINITY,
@@ -62,8 +55,7 @@ public class CalculatorTest
     }
 
     @Test
-    public void overflowAndUnderflow()
-    {
+    public void overflowAndUnderflow() {
         assertEquals(Double.POSITIVE_INFINITY,
                 calculator.multiply(Double.MAX_VALUE, 2.0), 0.0);
         assertEquals(0.0,
@@ -71,8 +63,7 @@ public class CalculatorTest
     }
 
     @Test
-    public void zeroAndNegativeZero()
-    {
+    public void zeroAndNegativeZero() {
         assertEquals(0.0, calculator.abs(-0.0), 0.0);
         assertEquals(-0.0, calculator.negate(0.0), 0.0);
         assertEquals(0.0, calculator.mod(0.0, 5.0), 0.0);
