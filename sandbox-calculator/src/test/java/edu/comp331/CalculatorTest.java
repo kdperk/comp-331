@@ -1,6 +1,7 @@
 package edu.comp331;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
@@ -67,5 +68,56 @@ public class CalculatorTest {
         assertEquals(0.0, calculator.abs(-0.0), 0.0);
         assertEquals(-0.0, calculator.negate(0.0), 0.0);
         assertEquals(0.0, calculator.mod(0.0, 5.0), 0.0);
+    }
+
+    @Test
+    public void validExpressions() {
+        assertTrue(calculator.isValidExpression("1 + 2 * 3"));
+        assertTrue(calculator.isValidExpression("(1 + 2) * 3"));
+        assertTrue(calculator.isValidExpression("2^3^2"));
+        assertTrue(calculator.isValidExpression("-2^2"));
+        assertTrue(calculator.isValidExpression("2^-3"));
+        assertTrue(calculator.isValidExpression("10--5"));
+        assertTrue(calculator.isValidExpression("10- -5"));
+        assertTrue(calculator.isValidExpression("10-(-5)"));
+        assertTrue(calculator.isValidExpression("10 / 0"));
+        assertTrue(calculator.isValidExpression("10 % 0"));
+    }
+
+    @Test
+    public void validDecimalAndWhitespaceForms() {
+        assertTrue(calculator.isValidExpression(".5 + 5."));
+        assertTrue(calculator.isValidExpression("0005.0500"));
+        assertTrue(calculator.isValidExpression(" 1\t+\n2 "));
+    }
+
+    @Test
+    public void invalidExpressions() {
+        assertFalse(calculator.isValidExpression(null));
+        assertFalse(calculator.isValidExpression(""));
+        assertFalse(calculator.isValidExpression("   "));
+        assertFalse(calculator.isValidExpression("5(3)"));
+        assertFalse(calculator.isValidExpression("(5)(3)"));
+        assertFalse(calculator.isValidExpression("--5"));
+        assertFalse(calculator.isValidExpression("10---5"));
+        assertFalse(calculator.isValidExpression("+5"));
+        assertFalse(calculator.isValidExpression("5++3"));
+        assertFalse(calculator.isValidExpression("5*/3"));
+        assertFalse(calculator.isValidExpression("1.2.3"));
+        assertFalse(calculator.isValidExpression("."));
+        assertFalse(calculator.isValidExpression("1e3"));
+        assertFalse(calculator.isValidExpression("2&3"));
+        assertFalse(calculator.isValidExpression("2=3"));
+    }
+
+    @Test
+    public void invalidParenthesesAndOperandPlacement() {
+        assertFalse(calculator.isValidExpression("()"));
+        assertFalse(calculator.isValidExpression("(2+3"));
+        assertFalse(calculator.isValidExpression("2+3)"));
+        assertFalse(calculator.isValidExpression("(2+)"));
+        assertFalse(calculator.isValidExpression("*2"));
+        assertFalse(calculator.isValidExpression("2/"));
+        assertFalse(calculator.isValidExpression("2^"));
     }
 }

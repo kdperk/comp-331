@@ -1,6 +1,15 @@
 package edu.comp331;
 
 public class Calculator {
+    public boolean isValidExpression(String input) {
+        if (input == null) {
+            return false;
+        }
+
+        String expression = input.replaceAll("\\s+", "");
+        return !expression.isEmpty() && new ExpressionParser(expression).isValid();
+    }
+
     public double add(double firstOperand, double secondOperand) {
         return firstOperand + secondOperand;
     }
