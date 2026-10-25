@@ -2,88 +2,114 @@ package edu.comp331;
 
 class ExpressionParser {
     private final String expression;
+    private final boolean validateOnly;
     private int position;
 
     ExpressionParser(String expression) {
+        this(expression, false);
+    }
+
+    private ExpressionParser(String expression, boolean validateOnly) {
         this.expression = expression;
+        this.validateOnly = validateOnly;
     }
 
     boolean isValid() {
-        return parseExpression() && position == expression.length();
-    }
-
-    private boolean parseExpression() {
-        if (!parseTerm()) {
+        try {
+            new ExpressionParser(expression, true).parse();
+            return true;
+        } catch (IllegalArgumentException exception) {
             return false;
         }
+    }
+
+    double solve() {
+        return parse();
+    }
+
+    private double parse() {
+        if (expression == null || expression.isEmpty()) {
+            throw invalidExpression();
+        }
+
+        double result = parseExpression();
+        if (position != expression.length()) {
+            throw invalidExpression();
+        }
+        return result;
+    }
+
+    private double parseExpression() {
+        double result = parseTerm();
 
         while (hasNext() && (current() == '+' || current() == '-')) {
+            char operator = current();
             position++;
-            if (!parseTerm()) {
-                return false;
-            }
+            double rightOperand = parseTerm();
+            result = validateOnly ? 0.0 : apply(operator, result, rightOperand);
         }
 
-        return true;
+        return result;
     }
 
-    private boolean parseTerm() {
-        if (!parseUnary()) {
-            return false;
-        }
+    private double parseTerm() {
+        double result = parseUnary();
 
         while (hasNext() && (current() == '*' || current() == '/' || current() == '%')) {
+            char operator = current();
             position++;
-            if (!parseUnary()) {
-                return false;
-            }
+            double rightOperand = parseUnary();
+            result = validateOnly ? 0.0 : apply(operator, result, rightOperand);
         }
 
-        return true;
+        return result;
     }
 
-    private boolean parseUnary() {
+    private double parseUnary() {
+        boolean negate = false;
         if (hasNext() && current() == '-') {
+            negate = true;
             position++;
             if (hasNext() && current() == '-') {
-                return false;
+                throw invalidExpression();
             }
         }
 
-        return parsePower();
+        double result = parsePower();
+        return negate && !validateOnly ? -result : result;
     }
 
-    private boolean parsePower() {
-        if (!parsePrimary()) {
-            return false;
-        }
-
+    private double parsePower() {
+        double base = parsePrimary();
         if (hasNext() && current() == '^') {
             position++;
-            return parseUnary();
+            double exponent = parseUnary();
+            return validateOnly ? 0.0 : Math.pow(base, exponent);
         }
 
-        return true;
+        return base;
     }
 
-    private boolean parsePrimary() {
+    private double parsePrimary() {
         if (!hasNext()) {
-            return false;
+            throw invalidExpression();
         }
 
         if (current() == '(') {
             position++;
-            if (!parseExpression() || !hasNext() || current() != ')') {
-                return false;
+            double result = parseExpression();
+            if (!hasNext() || current() != ')') {
+                throw invalidExpression();
             }
             position++;
-            return true;
+            return result;
         }
 
         return parseNumber();
     }
 
-    private boolean parseNumber() {
+    private double parseNumber() {
+        int start = position;
         boolean digitFound = false;
         boolean decimalPointFound = false;
 
@@ -100,7 +126,32 @@ class ExpressionParser {
             }
         }
 
-        return digitFound;
+        if (!digitFound) {
+            throw invalidExpression();
+        }
+
+        try {
+            return Double.parseDouble(expression.substring(start, position));
+        } catch (NumberFormatException exception) {
+            throw invalidExpression();
+        }
+    }
+
+    private double apply(char operator, double leftOperand, double rightOperand) {
+        switch (operator) {
+            case '+':
+                return Calculator.add(leftOperand, rightOperand);
+            case '-':
+                return Calculator.subtract(leftOperand, rightOperand);
+            case '*':
+                return Calculator.multiply(leftOperand, rightOperand);
+            case '/':
+                return Calculator.divide(leftOperand, rightOperand);
+            case '%':
+                return Calculator.mod(leftOperand, rightOperand);
+            default:
+                throw invalidExpression();
+        }
     }
 
     private boolean hasNext() {
@@ -109,5 +160,9 @@ class ExpressionParser {
 
     private char current() {
         return expression.charAt(position);
+    }
+
+    private IllegalArgumentException invalidExpression() {
+        return new IllegalArgumentException("Invalid expression");
     }
 }
