@@ -22,3 +22,12 @@ Division and modulo by zero
 NaN and infinity
 Overflow and underflow
 Zero and negative zero
+
+Created simple calculator program with functions that take double and perform a calculation.
+
+Initial acceptance criteria:
+Working functions add(), subtract(), multiply(), divide(), abs(), negate(), pow(), mod(). 
+
+Program worked as expected.
+
+Follow up work involved adding a function to parse an input string and determine if it is a valid expression. The function isValidExpression() was added to the Calculator class.

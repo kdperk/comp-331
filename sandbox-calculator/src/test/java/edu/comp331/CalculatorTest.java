@@ -108,6 +108,9 @@ public class CalculatorTest {
         assertFalse(calculator.isValidExpression("1e3"));
         assertFalse(calculator.isValidExpression("2&3"));
         assertFalse(calculator.isValidExpression("2=3"));
+        // assertFalse(calculator.isValidExpression("1e3"));
+        // assertFalse(calculator.isValidExpression("--5"));
+        // assertFalse(calculator.isValidExpression("10---5"));
     }
 
     @Test
