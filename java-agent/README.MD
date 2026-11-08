@@ -1,46 +1,103 @@
-Steps performed:
-Create Gemini API key and create initial Main.java file that performs basic http query to Gemini
-Received a lot of http 503 errors indicating Gemini API service is unusually busy
+# -- Lab 3 Readme --
 
-Initiated inline copilot prompt to retry on 503 errors - output was a while loop than continually retried 
-untila non-503 status was achieved.
-I manually added a maximum # of retries and exponential backoff behavior for successive retries.
+# Current architecture:
 
-In a separate git branch, I prompted Copilot chat to 'create a Java utility method to perform an http request to the Gemini API'.
-The output was actually pretty reasonable, which I think was partially due to the fact that I had an existing loop in main() that 
-performed that task. It recognized the matching behavior and mostly copied it to a new class with one utility method, perserving 
-the already existing URLs, console outputs, and connection retry policy. It included some other status codes along with 503, 
-some of which were not good candidates for a connection retry. ex: 504 (service took too long to process, indicating the payload is 
-too large or client wait time is set too short) and 429 (exceeded rate limit or daily quota).
+## Tool interface: AgentTool.java
+- contains name(), description(), and execute(...) methods that must be implemented.
+- contains static validatePath()
+    - method that validates a passed String is a path inside the base sandbox directory
+    - does not check that a path actually exists
+    - returns a Java Path object if passed String is valid/safe
 
-In another separate branch, I used a more structured prompt for the same thing. As follows:
-    You are helping me implement a Java utility method.
-    Goal: Initiate a http connection and send a prompt to Google Gemini. Method should have input validation and limited retries in the event of failure.
-    Inputs: 
-    - prompt
-    - Gemini API key
-    - optional verbose flag that causes progress to be printed
-    Outputs: Geminis response to the given prompt
-    Constraints: 
-    - max prompt size: 5000 characters
-    - max number of retries: 5
-    - exponential backoff for retries
-    - only retry on http 503, 502, 500 errors
-    Edge cases: unsure
-    Acceptance criteria: Method returns desired Gemini response or gives up after the maximum number of retries.
-    Generate only the method and a short explanation.
-This generated a more complete version of the utility function which eventually ended up in Main.java. While similar, this version did have better input 
-validation that matched my contraints, retried only on the error codes I specified, and insert verbose flag checks before println() calls. Because I 
-did not list them initially, I used Copilot to help identify some edge cases that may be problematic. Many were either not applicable or outside the 
-scope of what I wanted to implement, but it did identify a possible situation where the function could wait indefinitely for a response because no 
-timeout time was specified. 
+### Tools using interface:
+- GetFileContentTool - reads content of a file.
+    - reads only text content, not binary data.
+    - limited to 10,000 Java characters.
+    - uses a BufferedReader to read up to 10,000 characters into a StringBuilder. Copilots initial suggestion was to read the entire file into a String and truncate it if necessary. A Java String maximum length is tracked internally by an int, which means it can hold Integer.MAX_VALUE characters. As 2GB of text is slightly more than I will probably need, I decided to make this more efficient.
+- GetFilesInfoTool - gets info for files and directories
+    - if no directory is specified, runs on the base sandbox directory.
+    - rough imitation of Windows ls/dir console command.
+    - displays type (file, directory), size (files only), and name.
+    - by Java docs own admission, size is not necessarily perfectly accurate due to things like disk compression or filesystem quirks.
+    - displays files and directories intermixed. in the future, I will probably change them to be grouped.
+- WriteFileTool - writes text to a file
+    - writes only text content, not binary data.
+    - does not create non-existing parent directories in path.
+    - does create non-existing file in an existing directory.
+    - limited to writing 10,100 Java characters. The extra 100 characters are for testing reading truncation.
+    - cannot append or insert, only rewrites entire contents of file. 
+- RunJavaTestsTool - executes 'mvn test' in the sandbox envrironment
 
-Anticipating additional command-line arguments in coming labs, I created a simple Flag record that holds both the longhand and shorthand versions 
-of an argument along with a description. In class Main, I create a Flag for 'help' and 'verbose', and populated a hashmap with 
-shorthand and longhand versions that point to the correct flag object. At this point, Copilot could see what I was doing and filled used inline 
-completion to complete a for() loop that reacted to incoming arguments, however it was somewhat sloppy. It used substring() to grab the 
-argument text and duplicated behavior for both versions (- and --) of the arguments. I adjusted it to just pass the full arg with dash(es) into a 
-hashmap query, since a match is a match regardless of which format it is in. 
+### Running Individual Tools
+- GetFileContentTool, GetFilesInfoTool, and WriteFileTool cannot be run individually from the command line right now. I'm just waiting to see how they are used in future labs.
+- Demo of three above tools with output: mvn exec:java "-Dexec.args=--tool-demo"
+- RunJavaTestsTool - mvn exec:java "-Dexec.args=--run-tests"
+    - Humorously, Copilot's suggestion for running this tool from the command line was ... not running it at all. It tried to directly spawn a new process running mvn instead.
+- mvn exec:java "-Dexec.args=--help" to see summary of existing commands
 
-I moved actions for the 'help' argument into separate functions (printHelp() and printFlags()) which Copilot recognized immediately and suggested 
-by inline completion.
+### Sandbox Containment
+- implemented into every tool with Java Path object restrictions
+- assumes the sandbox directory shares the same parent as the working directory (../sandbox-calculator)
+- not sufficient for a number of situations I deemed outside the scope of this project:
+    - hard or soft links inside the sandbox linking elsewhere
+    - executing from a different working directory and not moving the sandbox accordingly
+    - changing the system PATH variable to point to a different mvn executable
+    - changing the file system between validation and tool execution with secondary threads
+    - running mvn or Java code from the sandbox - currently unrestricted
+
+### Testing
+- test coverage for GetFileContentTool, GetFilesInfoTool,WriteFileTool
+- test expected operations
+- test failure paths (when appropriate):
+    - missing files or directories
+    - illegal path access or traversal
+    - intended tool restrictions
+    - invalid arguments
+
+### Sample Tool Demo Execution (Maven output excluded)
+mvn exec:java "-Dexec.args=--tool-demo"  
+
+Running tool demo...
+
+        Directory F:\Coding\comp-331\sandbox-calculator
+
+Type     Size (bytes)     Name
+----     ------------     ----
+F        2744             pom.xml                                           
+F        741              README.MD                                         
+D                         src                                               
+D                         target                                            
+F        44               test.txt                                          
+
+        Content of file F:\Coding\comp-331\sandbox-calculator\test.txt
+
+This is a test. Sun Nov 08 11:26:38 EST 2026
+
+        Successfully wrote data to F:\Coding\comp-331\sandbox-calculator\test.txt
+
+        Content of file F:\Coding\comp-331\sandbox-calculator\test.txt
+
+This is a test. Sun Nov 08 12:16:11 EST 2026
+
+
+
+### Maven Test Output
+mvn test 
+(build output omitted)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running edu.comp331.ToolTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in edu.comp331.ToolTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  0.956 s
+[INFO] Finished at: 2026-11-08T12:36:54-05:00
+[INFO] ------------------------------------------------------------------------

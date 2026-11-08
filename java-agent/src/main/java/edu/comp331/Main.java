@@ -8,15 +8,23 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Date;
 import java.util.HashMap;
 
 public class Main {
+
+    public static final Path SANDBOX_BASE_DIR = Path.of("../sandbox-calculator").toAbsolutePath().normalize();
 
     // list of current valid command line flags
     final private static Flag[] VALID_FLAGS = new Flag[] {
             new Flag("help", "h", "Show this help message"),
             new Flag("verbose", "v", "Enable verbose output"),
+            new Flag("tool-demo", "td",
+                    "Run a demo of the file tools (get_files_info, get_file_content, and write_file)"),
+            new Flag("run-tests", "rt", "Run Maven tests in the sandbox directory")
     };
 
     /**
@@ -59,7 +67,7 @@ public class Main {
         while (true) {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
-                    .timeout(Duration.ofSeconds(30))
+                    .timeout(Duration.ofSeconds(50))
                     .header("Content-Type", "application/json")
                     .header("x-goog-api-key", apiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
@@ -139,6 +147,7 @@ public class Main {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
+
         HashMap<String, Flag> flagMap = new HashMap<>();
         for (Flag flag : VALID_FLAGS) {
             flagMap.put("-" + flag.shorthand(), flag);
@@ -156,6 +165,23 @@ public class Main {
                 }
                 if (flag.name().equals("help")) {
                     printHelp();
+                    System.exit(0);
+                }
+                if (flag.name().equals("tool-demo")) {
+                    System.out.println("Running tool demo...");
+                    GetFilesInfoTool info_tool = new GetFilesInfoTool();
+                    GetFileContentTool content_tool = new GetFileContentTool();
+                    WriteFileTool write_tool = new WriteFileTool();
+                    info_tool.execute();
+                    content_tool.execute("test.txt");
+                    write_tool.execute("test.txt", "This is a test. " + new Date().toString());
+                    content_tool.execute("test.txt");
+                    System.exit(0);
+                }
+                if (flag.name().equals("run-tests")) {
+                    System.out.println("Running Maven tests in the sandbox directory...");
+                    RunJavaTestsTool runTestsTool = new RunJavaTestsTool();
+                    runTestsTool.execute();
                     System.exit(0);
                 }
                 if (flag.name().equals("verbose")) {
