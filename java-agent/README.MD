@@ -30,10 +30,10 @@
 
 ### Running Individual Tools
 - GetFileContentTool, GetFilesInfoTool, and WriteFileTool cannot be run individually from the command line right now. I'm just waiting to see how they are used in future labs.
-- Demo of three above tools with output: mvn exec:java "-Dexec.args=--tool-demo"
-- RunJavaTestsTool - mvn exec:java "-Dexec.args=--run-tests"
+- Demo of three above tools with output: ```mvn exec:java "-Dexec.args=--tool-demo"```
+- RunJavaTestsTool - ```mvn exec:java "-Dexec.args=--run-tests"```
     - Humorously, Copilot's suggestion for running this tool from the command line was ... not running it at all. It tried to directly spawn a new process running mvn instead.
-- mvn exec:java "-Dexec.args=--help" to see summary of existing commands
+- ```mvn exec:java "-Dexec.args=--help"``` to see summary of existing commands
 
 ### Sandbox Containment
 - implemented into every tool with Java Path object restrictions
@@ -55,34 +55,34 @@
     - invalid arguments
 
 ### Sample Tool Demo Execution (Maven output excluded)
-mvn exec:java "-Dexec.args=--tool-demo"  
+```mvn exec:java "-Dexec.args=--tool-demo"```
 
-Running tool demo...
+        Running tool demo...
 
         Directory F:\Coding\comp-331\sandbox-calculator
 
-Type     Size (bytes)     Name
-----     ------------     ----
-F        2744             pom.xml                                           
-F        741              README.MD                                         
-D                         src                                               
-D                         target                                            
-F        44               test.txt                                          
+        Type     Size (bytes)     Name
+        ----     ------------     ----
+        F        2744             pom.xml                                           
+        F        741              README.MD                                         
+        D                         src                                               
+        D                         target                                            
+        F        44               test.txt                                          
 
         Content of file F:\Coding\comp-331\sandbox-calculator\test.txt
 
-This is a test. Sun Nov 08 11:26:38 EST 2026
+        This is a test. Sun Nov 08 11:26:38 EST 2026
 
         Successfully wrote data to F:\Coding\comp-331\sandbox-calculator\test.txt
 
         Content of file F:\Coding\comp-331\sandbox-calculator\test.txt
 
-This is a test. Sun Nov 08 12:16:11 EST 2026
+        This is a test. Sun Nov 08 12:16:11 EST 2026
 
 
 
 ### Maven Test Output
-mvn test 
+```mvn test```
 (build output omitted)
 [INFO] 
 [INFO] -------------------------------------------------------
