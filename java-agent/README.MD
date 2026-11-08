@@ -82,22 +82,23 @@
 
 
 ### Maven Test Output
-```mvn test```
-        (build output omitted)
-        [INFO] 
-        [INFO] -------------------------------------------------------
-        [INFO]  T E S T S
-        [INFO] -------------------------------------------------------
-        [INFO] Running edu.comp331.ToolTest
-        [INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in edu.comp331.ToolTest
-        [INFO] 
-        [INFO] Results:
-        [INFO] 
-        [INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
-        [INFO] 
-        [INFO] ------------------------------------------------------------------------
-        [INFO] BUILD SUCCESS
-        [INFO] ------------------------------------------------------------------------
-        [INFO] Total time:  0.956 s
-        [INFO] Finished at: 2026-11-08T12:36:54-05:00
-        [INFO] ------------------------------------------------------------------------
+```mvn test
+(build output omitted)
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running edu.comp331.ToolTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in edu.comp331.ToolTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  0.956 s
+[INFO] Finished at: 2026-11-08T12:36:54-05:00
+[INFO] ------------------------------------------------------------------------
+```
