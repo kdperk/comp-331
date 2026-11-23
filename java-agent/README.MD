@@ -2,8 +2,8 @@
 
 
 ### Risk Table
-|---|---|---|---|---|---|---|
 | Risk | Tool | Category | Likelihood | Impact | Current Control | Proposed Mitigation |
+|---|---|---|---|---|---|---|
 | Sandbox escape through symlinks/junctions | GetFileContent, WriteFile | Security | M | H | normalize() – only validates path text | Use toRealPath() to canonicalize paths |
 | Unrestricted sandbox Maven execution defeats file-tool containment | RunJavaTests | Security | M | H | None | Use -offline mode, require confirmation on modified pom.xml |
 | Sensitive file disclosure without approval or filtering | GetFileContent | Human Oversight | H | H | None | Require confirmation before logging, whitelist, filtering |
