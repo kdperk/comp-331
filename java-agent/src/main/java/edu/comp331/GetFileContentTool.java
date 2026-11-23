@@ -19,7 +19,7 @@ public class GetFileContentTool implements AgentTool {
     }
 
     @Override
-    public void execute(String... args) {
+    public void execute(String... args) throws IllegalArgumentException, IOException {
         if (args == null || args.length != 1) {
             throw new IllegalArgumentException("Expected exactly one path argument.");
         }

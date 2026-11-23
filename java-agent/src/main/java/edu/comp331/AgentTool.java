@@ -1,5 +1,6 @@
 package edu.comp331;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -14,12 +15,13 @@ public interface AgentTool {
      * @param path
      * @return normalized path within the sandbox directory
      * @throws IllegalArgumentException
+     * @throws IOException
      */
-    public static Path validatePath(String path) throws IllegalArgumentException {
+    public static Path validatePath(String path) throws IllegalArgumentException, IOException {
         if (path == null) {
             throw new IllegalArgumentException("Path must not be null.");
         }
-        Path targetPath = SANDBOX_BASE_DIR.resolve(path).normalize();
+        Path targetPath = SANDBOX_BASE_DIR.resolve(path).toRealPath();
         // System.out.println(SANDBOX_BASE_DIR.toString());
         // System.out.println(targetPath.toString());
         if (!targetPath.startsWith(SANDBOX_BASE_DIR)) {
@@ -32,5 +34,5 @@ public interface AgentTool {
 
     public String description();
 
-    public void execute(String... args);
+    public void execute(String... args) throws IllegalArgumentException, IOException;
 }

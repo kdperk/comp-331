@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +48,7 @@ class ToolTest {
     }
 
     @Test
-    void getFileContentReadsExistingFile() {
+    void getFileContentReadsExistingFile() throws IllegalArgumentException, IOException {
         new GetFileContentTool().execute(relativePath(fixture));
 
         assertTrue(stdout().contains("fixture content"));
@@ -68,7 +70,7 @@ class ToolTest {
     void getFileContentRejectsMissingFilesDirectoriesTraversalAndInvalidArguments() {
         GetFileContentTool tool = new GetFileContentTool();
 
-        assertThrows(IllegalArgumentException.class, () -> tool.execute("missing-file.txt"));
+        assertThrows(NoSuchFileException.class, () -> tool.execute("missing-file.txt"));
         assertThrows(IllegalArgumentException.class, () -> tool.execute(""));
         assertThrows(IllegalArgumentException.class, () -> tool.execute("../java-agent/pom.xml"));
         assertThrows(IllegalArgumentException.class, () -> tool.execute());
@@ -76,7 +78,7 @@ class ToolTest {
     }
 
     @Test
-    void getFilesInfoListsSandboxForMissingAndNullArguments() {
+    void getFilesInfoListsSandboxForMissingAndNullArguments() throws IllegalArgumentException, IOException {
         GetFilesInfoTool tool = new GetFilesInfoTool();
 
         tool.execute();
@@ -88,14 +90,14 @@ class ToolTest {
     }
 
     @Test
-    void getFilesInfoListsValidDirectoryAndRejectsInvalidInputs() {
+    void getFilesInfoListsValidDirectoryAndRejectsInvalidInputs() throws IllegalArgumentException, IOException {
         GetFilesInfoTool tool = new GetFilesInfoTool();
 
         tool.execute(".");
         assertTrue(stdout().contains(fixture.getFileName().toString()));
 
         assertThrows(IllegalArgumentException.class, () -> tool.execute(relativePath(fixture)));
-        assertThrows(IllegalArgumentException.class, () -> tool.execute("missing-directory"));
+        assertThrows(NoSuchFileException.class, () -> tool.execute("missing-directory"));
         assertThrows(IllegalArgumentException.class, () -> tool.execute("../java-agent"));
         assertThrows(IllegalArgumentException.class, () -> tool.execute("one", "two"));
     }
@@ -129,13 +131,38 @@ class ToolTest {
     }
 
     @Test
+    void writeFileConfirmationAllowsAffirmativeResponse() throws IOException {
+        ByteArrayInputStream input = new ByteArrayInputStream("yes\n".getBytes(StandardCharsets.UTF_8));
+        PrintStream confirmationOutput = new PrintStream(output, true, StandardCharsets.UTF_8);
+        WriteFileTool tool = new WriteFileTool(true, input, confirmationOutput);
+
+        tool.execute(relativePath(fixture), "confirmed content");
+
+        assertEquals("confirmed content", Files.readString(fixture));
+        assertTrue(stdout().contains("Write to"));
+        assertTrue(stdout().contains("Successfully wrote data"));
+    }
+
+    @Test
+    void writeFileConfirmationCancelsNegativeResponse() throws IOException {
+        ByteArrayInputStream input = new ByteArrayInputStream("n\n".getBytes(StandardCharsets.UTF_8));
+        PrintStream confirmationOutput = new PrintStream(output, true, StandardCharsets.UTF_8);
+        WriteFileTool tool = new WriteFileTool(true, input, confirmationOutput);
+
+        tool.execute(relativePath(fixture), "discarded content");
+
+        assertEquals("fixture content", Files.readString(fixture));
+        assertTrue(stdout().contains("Write cancelled"));
+    }
+
+    @Test
     void writeFileRejectsOverLimitDirectoriesMissingParentsTraversalAndInvalidArguments() {
         WriteFileTool tool = new WriteFileTool();
         String missingParentPath = "missing-parent/file.txt";
         String overLimit = "C".repeat(WriteFileTool.MAX_CHARACTERS + 1);
 
         assertThrows(IllegalArgumentException.class, () -> tool.execute("", "content"));
-        assertThrows(IllegalArgumentException.class, () -> tool.execute(missingParentPath, "content"));
+        assertThrows(RuntimeException.class, () -> tool.execute(missingParentPath, "content"));
         assertThrows(IllegalArgumentException.class, () -> tool.execute("../java-agent/outside.txt", "content"));
         assertThrows(IllegalArgumentException.class, () -> tool.execute("one"));
         assertThrows(IllegalArgumentException.class, () -> tool.execute((String[]) null));

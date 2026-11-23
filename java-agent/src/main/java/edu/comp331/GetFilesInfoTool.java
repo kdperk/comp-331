@@ -29,8 +29,10 @@ public class GetFilesInfoTool implements AgentTool {
      * directory). Prints file and folder information to the console.
      * 
      * @param userPath The path to the directory to get information about.
+     * @throws IOException
+     * @throws IllegalArgumentException
      */
-    public void execute(String... args) {
+    public void execute(String... args) throws IllegalArgumentException, IOException {
         // default to the base sandbox directory if no path is provided
         String userPath = (args == null || args.length == 0) ? "" : args[0];
         if (args != null && args.length > 1) {

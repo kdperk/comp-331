@@ -1,104 +1,46 @@
-# -- Lab 3 Readme --
-
-# Current architecture:
-
-## Tool interface: AgentTool.java
-- contains name(), description(), and execute(...) methods that must be implemented.
-- contains static validatePath()
-    - method that validates a passed String is a path inside the base sandbox directory
-    - does not check that a path actually exists
-    - returns a Java Path object if passed String is valid/safe
-
-### Tools using interface:
-- GetFileContentTool - reads content of a file.
-    - reads only text content, not binary data.
-    - limited to 10,000 Java characters.
-    - uses a BufferedReader to read up to 10,000 characters into a StringBuilder. Copilots initial suggestion was to read the entire file into a String and truncate it if necessary. A Java String maximum length is tracked internally by an int, which means it can hold Integer.MAX_VALUE characters. As 2GB of text is slightly more than I will probably need, I decided to make this more efficient.
-- GetFilesInfoTool - gets info for files and directories
-    - if no directory is specified, runs on the base sandbox directory.
-    - rough imitation of Windows ls/dir console command.
-    - displays type (file, directory), size (files only), and name.
-    - by Java docs own admission, size is not necessarily perfectly accurate due to things like disk compression or filesystem quirks.
-    - displays files and directories intermixed. in the future, I will probably change them to be grouped.
-- WriteFileTool - writes text to a file
-    - writes only text content, not binary data.
-    - does not create non-existing parent directories in path.
-    - does create non-existing file in an existing directory.
-    - limited to writing 10,100 Java characters. The extra 100 characters are for testing reading truncation.
-    - cannot append or insert, only rewrites entire contents of file. 
-- RunJavaTestsTool - executes 'mvn test' in the sandbox envrironment
-
-### Running Individual Tools
-- GetFileContentTool, GetFilesInfoTool, and WriteFileTool cannot be run individually from the command line right now. I'm just waiting to see how they are used in future labs.
-- Demo of three above tools with output: ```mvn exec:java "-Dexec.args=--tool-demo"```
-- RunJavaTestsTool - ```mvn exec:java "-Dexec.args=--run-tests"```
-    - Humorously, Copilot's suggestion for running this tool from the command line was ... not running it at all. It tried to directly spawn a new process running mvn instead.
-- ```mvn exec:java "-Dexec.args=--help"``` to see summary of existing commands
-
-### Sandbox Containment
-- implemented into every tool with Java Path object restrictions
-- assumes the sandbox directory shares the same parent as the working directory (../sandbox-calculator)
-- not sufficient for a number of situations I deemed outside the scope of this project:
-    - hard or soft links inside the sandbox linking elsewhere
-    - executing from a different working directory and not moving the sandbox accordingly
-    - changing the system PATH variable to point to a different mvn executable
-    - changing the file system between validation and tool execution with secondary threads
-    - running mvn or Java code from the sandbox - currently unrestricted
-
-### Testing
-- test coverage for GetFileContentTool, GetFilesInfoTool,WriteFileTool
-- test expected operations
-- test failure paths (when appropriate):
-    - missing files or directories
-    - illegal path access or traversal
-    - intended tool restrictions
-    - invalid arguments
-
-### Sample Tool Demo Execution (Maven output excluded)
-```mvn exec:java "-Dexec.args=--tool-demo"```
-
-        Running tool demo...
-
-        Directory F:\Coding\comp-331\sandbox-calculator
-
-        Type     Size (bytes)     Name
-        ----     ------------     ----
-        F        2744             pom.xml                                           
-        F        741              README.MD                                         
-        D                         src                                               
-        D                         target                                            
-        F        44               test.txt                                          
-
-        Content of file F:\Coding\comp-331\sandbox-calculator\test.txt
-
-        This is a test. Sun Nov 08 11:26:38 EST 2026
-
-        Successfully wrote data to F:\Coding\comp-331\sandbox-calculator\test.txt
-
-        Content of file F:\Coding\comp-331\sandbox-calculator\test.txt
-
-        This is a test. Sun Nov 08 12:16:11 EST 2026
+# -- Lab 4 Readme --
 
 
+### Risk Table
+|---|---|---|---|---|---|---|
+| Risk | Tool | Category | Likelihood | Impact | Current Control | Proposed Mitigation |
+| Sandbox escape through symlinks/junctions | GetFileContent, WriteFile | Security | M | H | normalize() – only validates path text | Use toRealPath() to canonicalize paths |
+| Unrestricted sandbox Maven execution defeats file-tool containment | RunJavaTests | Security | M | H | None | Use -offline mode, require confirmation on modified pom.xml |
+| Sensitive file disclosure without approval or filtering | GetFileContent | Human Oversight | H | H | None | Require confirmation before logging, whitelist, filtering |
+| Time-of-check/time-of-use race | GetFileContent | Security | L | M | Asynchronous path checking | Open FileChannel, then use FileLock (Windows only)  |
+| UTF-8 and character-boundary failures | GetFileContent | Reliability | L | L | 10k Java character limit | Check if last character is first part of surrogate pair – if so, read next part also |
+| Non-atomic destructive writes | WriteFile | Security | L | M | Asynchronous path checking | Write to temp file, rename to actual file, Confirmation on write |
+| Error reporting loses diagnostic context | GetFileContent | Maintainabilty | M | L | Generic error message | Pass through the original error to allow identification of path and failure type |
 
-### Maven Test Output
-```mvn test
-(build output omitted)
-[INFO] 
-[INFO] -------------------------------------------------------
-[INFO]  T E S T S
-[INFO] -------------------------------------------------------
-[INFO] Running edu.comp331.ToolTest
-[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in edu.comp331.ToolTest
-[INFO] 
-[INFO] Results:
-[INFO] 
-[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
-[INFO] 
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  0.956 s
-[INFO] Finished at: 2026-11-08T12:36:54-05:00
-[INFO] ------------------------------------------------------------------------
-```
+### Implemented Safeguards
+- Write confirmation:
+    - WriteFileTool can be constructed with confirmation mode enabled.
+    - The `--confirm-writes` / `-cw` command-line flag enables confirmation for tool-demo writes.
+    - Confirmation accepts `y` or `yes`; empty, EOF, read errors, and every other response cancel the write.
+- Sandbox escape through symbolic links:
+    - AgentTool - Updated validatePath() to use toRealPath() instead of normalize(). This allows symbolic links to be expanded before sandbox containment checks.
+    - WriteFileTool - Tweaked logic for path validation, as toRealPath() fails on nonexistent paths, but the tool should still create a new file in an existing directory. If the file exists, we can validate with toRealPath(), otherwise we validate its parent.
+    - Minor updates to tests to accomodate the above changes.
+
+### Risks Mischaracterized by Copilot
+- UTF-8 Character boundary failures. Reading a file has a 10k Java character limit, enforced by manual counting and FileReader reads. It is possible for the final character to be the first part of a two-part character, meaning input would end with a malformed character. This one seemed to really throw Copilot. It initially characterized it as a medium-risk threat, possibly because it saw my arbitrarily imposed limit as very important? Even when asking it for the best way to ennforce this limit and not break characters, it seemed to argue with itself, proposing alternatives before rejecting them in turn.
+
+### Planned Future Mitigations
+- Some kind of whitelist or filtering for GetFileContent which prevents logging of sensitive files.
+- Expansion of current file safety checks to include file locking and/or atomic writes to prevent the possibility of files being swapped between validation and reading/writing.
+- Explore some level of containment for the sandbox maven program and files, like running in offline mode or a write blocklist.
+
+## Production Readiness Checklist
+
+| Area | Safe enough for experimentation | Required before real use |
+|---|---|---|
+| Data | Synthetic or deliberately public files | Data classification, allowlisted directories, redaction, backup, and retention policy |
+| File containment | Fixed sandbox and basic traversal tests | Canonical and no-follow path checks, race-resistant open operations, hard-link and mount policy |
+| File reading | Regular text files with size limit | Strict UTF-8 decoding, code-point-aware truncation, binary detection, read-only handles |
+| File writing | Single-process, disposable files | Atomic temp-file/rename behavior, backup/recovery, overwrite confirmation, no direct symlink following |
+| Maven/tests | Innocuous test project, 30-second timeout | Read-only build inputs, offline dependencies, isolated workspace, process-tree cleanup, resource limits |
+| Human oversight | Manual invocation and review | Per-write confirmation, command preview, approval for network/build actions, and audit trail |
+| Failure handling | Clear exceptions and basic tests | Structured errors, recovery behavior, bounded logs, interruption handling, and retry policy |
+| Testing | Unit tests for normal and invalid operations | Symlink, race, malformed UTF-8, binary-file, interruption, timeout, permissions, and process-isolation tests |
+| Monitoring | Console output | Correlation IDs, audit events, metrics, alerting, and no-sensitive-data logging |
+| Deployment | Local classpath/Maven execution | Reproducible build, artifact signing, least-privilege service account, upgrade and rollback process |

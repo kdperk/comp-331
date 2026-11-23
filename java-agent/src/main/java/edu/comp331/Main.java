@@ -22,6 +22,7 @@ public class Main {
     final private static Flag[] VALID_FLAGS = new Flag[] {
             new Flag("help", "h", "Show this help message"),
             new Flag("verbose", "v", "Enable verbose output"),
+            new Flag("confirm-writes", "cw", "Prompt for confirmation before writing files"),
             new Flag("tool-demo", "td",
                     "Run a demo of the file tools (get_files_info, get_file_content, and write_file)"),
             new Flag("run-tests", "rt", "Run Maven tests in the sandbox directory")
@@ -154,7 +155,14 @@ public class Main {
             flagMap.put("--" + flag.name(), flag);
         }
         boolean verbose = false;
+        boolean confirmWrites = false;
         String prompt = "";
+
+        for (String arg : args) {
+            if ("--confirm-writes".equals(arg) || "-cw".equals(arg)) {
+                confirmWrites = true;
+            }
+        }
 
         for (String arg : args) {
             if (arg.startsWith("-")) {
@@ -171,7 +179,7 @@ public class Main {
                     System.out.println("Running tool demo...");
                     GetFilesInfoTool info_tool = new GetFilesInfoTool();
                     GetFileContentTool content_tool = new GetFileContentTool();
-                    WriteFileTool write_tool = new WriteFileTool();
+                    WriteFileTool write_tool = new WriteFileTool(confirmWrites);
                     info_tool.execute();
                     content_tool.execute("test.txt");
                     write_tool.execute("test.txt", "This is a test. " + new Date().toString());
